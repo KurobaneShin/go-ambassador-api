@@ -1,1 +1,1 @@
-# go-embassador-api
+# go-ambassador-api
