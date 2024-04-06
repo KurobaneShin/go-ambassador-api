@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"ambassador/src/database"
+	"ambassador/src/routes"
 )
 
 func main() {
@@ -12,9 +13,7 @@ func main() {
 
 	app := fiber.New()
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, hot reload!")
-	})
+	routes.Setup(app)
 
 	if err := app.Listen(":8000"); err != nil {
 		panic(err)
