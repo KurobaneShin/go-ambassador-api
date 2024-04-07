@@ -1,7 +1,10 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/asaskevich/govalidator"
+	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -111,5 +114,33 @@ func Login(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.JSON(user)
+	payload := jwt.StandardClaims{
+		Subject:   user.Id.String(),
+		ExpiresAt: jwt.NewTime(15000),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+
+	signedToken, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		ctx.Status(fiber.StatusInternalServerError)
+
+		return ctx.JSON(fiber.Map{
+			"message": "Could not login",
+		})
+	}
+
+	cookie := fiber.Cookie{
+		Name:     "jwt",
+		Expires:  time.Now().Add(time.Hour * 24),
+		HTTPOnly: true,
+		Value:    signedToken,
+	}
+
+	ctx.Cookie(&cookie)
+
+	return ctx.JSON(fiber.Map{
+		"message": "Success",
+		"token":   signedToken,
+	})
 }
