@@ -7,7 +7,6 @@ import (
 	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 
 	"ambassador/src/database"
 	"ambassador/src/models"
@@ -56,18 +55,21 @@ func Register(ctx *fiber.Ctx) error {
 		})
 	}
 
-	password, err := bcrypt.GenerateFromPassword([]byte(data["password"]), 12)
-	if err != nil {
-		ctx.Status(fiber.StatusBadRequest)
-	}
-
 	user := models.User{
 		Id:           uuid.New(),
 		FirstName:    data["first_name"],
 		LastName:     data["last_name"],
 		Email:        data["email"],
 		IsAmbassador: false,
-		Password:     string(password),
+	}
+
+	err = user.SetPassword(data["password"])
+	if err != nil {
+		ctx.Status(fiber.StatusBadRequest)
+
+		return ctx.JSON(fiber.Map{
+			"message": "Could not create user",
+		})
 	}
 
 	database.DB.Create(&user)
@@ -106,7 +108,7 @@ func Login(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data["password"])); err != nil {
+	if err := user.ComparePassword(data["password"]); err != nil {
 		ctx.Status(fiber.StatusBadRequest)
 
 		return ctx.JSON(fiber.Map{
